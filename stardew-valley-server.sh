@@ -5,7 +5,7 @@ export DISPLAY=:99.0
 export XAUTHORITY=~/.Xauthority
 export TERM=xterm
 
-apt-get install -y --no-install-recommends \
+sudo apt-get install -y --no-install-recommends \
     curl lib32gcc-s1 ca-certificates wget unzip x11vnc i3 xvfb
 
 # Remove any existing Xvfb lock file
