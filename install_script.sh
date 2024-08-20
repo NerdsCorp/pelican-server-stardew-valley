@@ -6,7 +6,7 @@
 # Update package list and install required packages
 apt-get update -y
 apt-get install -y --no-install-recommends \
-    curl lib32gcc-s1 ca-certificates wget unzip x11vnc i3 xvfb
+    curl lib32gcc-s1 ca-certificates wget unzip x11vnc i3 xvfb mono-complete
 
 # Set default steam user if not provided
 if [ -z "${STEAM_USER}" ]; then
