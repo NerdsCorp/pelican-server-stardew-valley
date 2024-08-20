@@ -1,72 +1,90 @@
 #!/bin/bash
-# steamcmd Base Installation Script
-#
+# SteamCMD Base Installation Script
 # Server Files: /mnt/server
 # Image to install with is 'mono:latest'
-apt -y update
-apt -y --no-install-recommends install curl lib32gcc1 ca-certificates wget unzip x11vnc i3 xvfb
 
-## just in case someone removed the defaults.
-if [ "${STEAM_USER}" == "" ]; then
-    echo -e "steam user is not set.\n"
-    echo -e "Using anonymous user.\n"
-    STEAM_USER=anonymous
+# Update package list and install required packages
+apt-get update -y
+apt-get install -y --no-install-recommends \
+    curl lib32gcc1 ca-certificates wget unzip x11vnc i3 xvfb
+
+# Set default steam user if not provided
+if [ -z "${STEAM_USER}" ]; then
+    echo "Steam user is not set. Using anonymous user."
+    STEAM_USER="anonymous"
     STEAM_PASS=""
     STEAM_AUTH=""
 else
-    echo -e "user set to ${STEAM_USER}"
+    echo "User set to ${STEAM_USER}"
 fi
 
-cd /tmp
-mkdir -p /mnt/server/steamcmd
-
-# SteamCMD fails otherwise for some reason, even running as root.
-# This is changed at the end of the install process anyways.
+# Set up SteamCMD directory
+STEAMCMD_DIR="/mnt/server/steamcmd"
+mkdir -p "${STEAMCMD_DIR}"
 chown -R root:root /mnt
-export HOME=/mnt/server
 
-## download and install steamcmd
-curl -sSL -o steamcmd.tar.gz https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz
-tar -xzvf steamcmd.tar.gz -C /mnt/server/steamcmd
-cd /mnt/server/steamcmd
+# Set HOME environment variable
+export HOME="/mnt/server"
 
-## install game using steamcmd
-./steamcmd.sh +login ${STEAM_USER} ${STEAM_PASS} ${STEAM_AUTH} +force_install_dir /mnt/server +app_update ${SRCDS_APPID} validate +quit
+# Download and install SteamCMD
+curl -sSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C "${STEAMCMD_DIR}"
+cd "${STEAMCMD_DIR}"
 
-## set up 32 bit libraries
-mkdir -p /mnt/server/.steam/sdk32
-cp -v /mnt/server/steamdcmd/linux32/steamclient.so /mnt/server/.steam/sdk32/steamclient.so
+# Install the game using SteamCMD
+./steamcmd.sh +login "${STEAM_USER}" "${STEAM_PASS}" "${STEAM_AUTH}" +force_install_dir /mnt/server +app_update "${SRCDS_APPID}" validate +quit
 
-## set up 64 bit libraries
-mkdir -p /mnt/server/.steam/sdk64
-cp -v /mnt/server/steamcmd/linux64/steamclient.so /mnt/server/.steam/sdk64/steamclient.so
+# Set up Steam client libraries
+STEAM_SDK_DIR="/mnt/server/.steam"
+mkdir -p "${STEAM_SDK_DIR}/sdk32" "${STEAM_SDK_DIR}/sdk64"
+cp -v "${STEAMCMD_DIR}/linux32/steamclient.so" "${STEAM_SDK_DIR}/sdk32/steamclient.so"
+cp -v "${STEAMCMD_DIR}/linux64/steamclient.so" "${STEAM_SDK_DIR}/sdk64/steamclient.so"
 
-## Game specific setup.
-cd /mnt/server/
-mkdir -p ./.config
-mkdir -p ./.config/i3
-mkdir -p ./.config/StardewValley
-mkdir -p ./nexus
-mkdir -p ./storage
-mkdir -p ./logs
+# Game-specific setup
+CONFIG_DIR="/mnt/server/.config"
+STORAGE_DIR="/mnt/server/storage"
+MODS_DIR="/mnt/server/Mods"
+LOGS_DIR="/mnt/server/logs"
 
-## Stardew Valley specific setup.
-wget https://github.com/Pathoschild/SMAPI/releases/download/3.8/SMAPI-3.8.0-installer.zip -qO ./storage/nexus.zip
-unzip ./storage/nexus.zip -d ./nexus/
-/bin/bash -c "echo -e \"2\n/mnt/server\n1\n\" | /usr/bin/mono /mnt/server/nexus/SMAPI\ 3.8.0\ installer/internal/unix-install.exe"
-wget https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main/stardew_valley_server.config -qO ./.config/StardewValley/startup_preferences
-wget https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main/i3.config -qO ./.config/i3/config
-wget https://github.com/NerdsCorp/pelican-server-stardew-valley/raw/main/alwayson.zip -qO ./storage/alwayson.zip
-wget https://github.com/NerdsCorp/pelican-server-stardew-valley/raw/main/unlimitedplayers.zip -qO ./storage/unlimitedplayers.zip
-wget https://github.com/NerdsCorp/pelican-server-stardew-valley/raw/main/autoloadgame.zip -qO ./storage/autoloadgame.zip
-unzip ./storage/alwayson.zip -d ./Mods
-unzip ./storage/unlimitedplayers.zip -d ./Mods
-unzip ./storage/autoloadgame.zip -d ./Mods
-wget https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main/alwayson.json -qO ./Mods/Always On Server/config.json
-wget https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main/unlimitedplayers.json -qO ./Mods/UnlimitedPlayers/config.json
-wget https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main/autoloadgame.json -qO ./Mods/AutoLoadGame/config.json
-wget https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main/stardew-valley-server.sh -qO ./stardew-valley-server.sh
-chmod +x ./stardew-valley-server.sh 
-rm ./storage/alwayson.zip ./storage/unlimitedplayers.zip ./storage/autoloadgame.zip
+mkdir -p "${CONFIG_DIR}/i3" "${CONFIG_DIR}/StardewValley" "${STORAGE_DIR}" "${MODS_DIR}" "${LOGS_DIR}"
 
-echo 'Stardew Valley Installation complete. Restart server.'
+# Download and install SMAPI
+SMAPI_URL="https://github.com/Pathoschild/SMAPI/releases/download/3.8/SMAPI-3.8.0-installer.zip"
+SMAPI_INSTALLER="${STORAGE_DIR}/nexus.zip"
+wget -qO "${SMAPI_INSTALLER}" "${SMAPI_URL}"
+unzip "${SMAPI_INSTALLER}" -d /mnt/server/nexus
+echo -e "2\n/mnt/server\n1\n" | mono /mnt/server/nexus/SMAPI\ 3.8.0\ installer/internal/unix-install.exe
+
+# Download and set up configuration files
+CONFIG_BASE_URL="https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main"
+wget -qO "${CONFIG_DIR}/StardewValley/startup_preferences" "${CONFIG_BASE_URL}/stardew_valley_server.config"
+wget -qO "${CONFIG_DIR}/i3/config" "${CONFIG_BASE_URL}/i3.config"
+
+# Download, unzip, and configure mods
+declare -A MODS=(
+    ["alwayson.zip"]="${CONFIG_BASE_URL}/alwayson.zip"
+    ["unlimitedplayers.zip"]="${CONFIG_BASE_URL}/unlimitedplayers.zip"
+    ["autoloadgame.zip"]="${CONFIG_BASE_URL}/autoloadgame.zip"
+)
+for mod in "${!MODS[@]}"; do
+    wget -qO "${STORAGE_DIR}/${mod}" "${MODS[$mod]}"
+    unzip "${STORAGE_DIR}/${mod}" -d "${MODS_DIR}"
+done
+
+# Configure each mod
+declare -A MOD_CONFIGS=(
+    ["Always On Server/config.json"]="${CONFIG_BASE_URL}/alwayson.json"
+    ["UnlimitedPlayers/config.json"]="${CONFIG_BASE_URL}/unlimitedplayers.json"
+    ["AutoLoadGame/config.json"]="${CONFIG_BASE_URL}/autoloadgame.json"
+)
+for config in "${!MOD_CONFIGS[@]}"; do
+    wget -qO "${MODS_DIR}/${config}" "${MOD_CONFIGS[$config]}"
+done
+
+# Download and set up the Stardew Valley server script
+wget -qO /mnt/server/stardew-valley-server.sh "${CONFIG_BASE_URL}/stardew-valley-server.sh"
+chmod +x /mnt/server/stardew-valley-server.sh
+
+# Cleanup
+rm "${SMAPI_INSTALLER}" "${STORAGE_DIR}/alwayson.zip" "${STORAGE_DIR}/unlimitedplayers.zip" "${STORAGE_DIR}/autoloadgame.zip"
+
+echo "Stardew Valley Installation complete. Restart the server."
