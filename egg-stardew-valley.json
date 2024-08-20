@@ -1,0 +1,94 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2024-08-20T15:21:16-05:00",
+    "name": "Stardew Valley",
+    "author": "kristopher_reeves@yahoo.com",
+    "description": "Stardew Valley is a 2016 farm life simulation role-playing video game developed by Eric \"ConcernedApe\" Barone. Players take the role of a character who inherits their deceased grandfather's dilapidated farm in a place known as Stardew Valley.",
+    "features": [
+        "steam_disk_space"
+    ],
+    "docker_images": {
+        "ghcr.io\/parkervcp\/yolks:ubuntu": "ghcr.io\/parkervcp\/yolks:ubuntu"
+    },
+    "file_denylist": [],
+    "startup": ".\/stardew-valley-server.sh",
+    "config": {
+        "files": "{}",
+        "startup": "{}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n# SteamCMD Base Installation Script\r\n# Server Files: \/mnt\/server\r\n# Image to install with is 'mono:latest'\r\n\r\n# Update package list and install required packages\r\napt-get update -y\r\napt-get install -y --no-install-recommends \\\r\n    curl lib32gcc-s1 ca-certificates wget unzip x11vnc i3 xvfb\r\n\r\n# Set default steam user if not provided\r\nif [ -z \"${STEAM_USER}\" ]; then\r\n    echo \"Steam user is not set. Using anonymous user.\"\r\n    STEAM_USER=\"anonymous\"\r\n    STEAM_PASS=\"\"\r\n    STEAM_AUTH=\"\"\r\nelse\r\n    echo \"User set to ${STEAM_USER}\"\r\nfi\r\n\r\n# Set up SteamCMD directory\r\nSTEAMCMD_DIR=\"\/mnt\/server\/steamcmd\"\r\nmkdir -p \"${STEAMCMD_DIR}\"\r\nchown -R root:root \/mnt\r\n\r\n# Set HOME environment variable\r\nexport HOME=\"\/mnt\/server\"\r\n\r\n# Download and install SteamCMD\r\ncurl -sSL https:\/\/steamcdn-a.akamaihd.net\/client\/installer\/steamcmd_linux.tar.gz | tar -xz -C \"${STEAMCMD_DIR}\"\r\ncd \"${STEAMCMD_DIR}\"\r\n\r\n# Install the game using SteamCMD\r\n.\/steamcmd.sh +login \"${STEAM_USER}\" \"${STEAM_PASS}\" \"${STEAM_AUTH}\" +force_install_dir \/mnt\/server +app_update \"${SRCDS_APPID}\" validate +quit\r\n\r\n# Set up Steam client libraries\r\nSTEAM_SDK_DIR=\"\/mnt\/server\/.steam\"\r\nmkdir -p \"${STEAM_SDK_DIR}\/sdk32\" \"${STEAM_SDK_DIR}\/sdk64\"\r\ncp -v \"${STEAMCMD_DIR}\/linux32\/steamclient.so\" \"${STEAM_SDK_DIR}\/sdk32\/steamclient.so\"\r\ncp -v \"${STEAMCMD_DIR}\/linux64\/steamclient.so\" \"${STEAM_SDK_DIR}\/sdk64\/steamclient.so\"\r\n\r\n# Game-specific setup\r\nCONFIG_DIR=\"\/mnt\/server\/.config\"\r\nSTORAGE_DIR=\"\/mnt\/server\/storage\"\r\nMODS_DIR=\"\/mnt\/server\/Mods\"\r\nLOGS_DIR=\"\/mnt\/server\/logs\"\r\n\r\nmkdir -p \"${CONFIG_DIR}\/i3\" \"${CONFIG_DIR}\/StardewValley\" \"${STORAGE_DIR}\" \"${MODS_DIR}\" \"${LOGS_DIR}\"\r\n\r\n# Download and install SMAPI\r\nSMAPI_URL=\"https:\/\/github.com\/Pathoschild\/SMAPI\/releases\/download\/3.8\/SMAPI-3.8.0-installer.zip\"\r\nSMAPI_INSTALLER=\"${STORAGE_DIR}\/nexus.zip\"\r\nwget -qO \"${SMAPI_INSTALLER}\" \"${SMAPI_URL}\"\r\nunzip \"${SMAPI_INSTALLER}\" -d \/mnt\/server\/nexus\r\necho -e \"2\\n\/mnt\/server\\n1\\n\" | mono \/mnt\/server\/nexus\/SMAPI\\ 3.8.0\\ installer\/internal\/unix-install.exe\r\n\r\n# Download and set up configuration files\r\nCONFIG_BASE_URL=\"https:\/\/raw.githubusercontent.com\/NerdsCorp\/pelican-server-stardew-valley\/main\"\r\nwget -qO \"${CONFIG_DIR}\/StardewValley\/startup_preferences\" \"${CONFIG_BASE_URL}\/stardew_valley_server.config\"\r\nwget -qO \"${CONFIG_DIR}\/i3\/config\" \"${CONFIG_BASE_URL}\/i3.config\"\r\n\r\n# Download, unzip, and configure mods\r\ndeclare -A MODS=(\r\n    [\"alwayson.zip\"]=\"${CONFIG_BASE_URL}\/alwayson.zip\"\r\n    [\"unlimitedplayers.zip\"]=\"${CONFIG_BASE_URL}\/unlimitedplayers.zip\"\r\n    [\"autoloadgame.zip\"]=\"${CONFIG_BASE_URL}\/autoloadgame.zip\"\r\n)\r\nfor mod in \"${!MODS[@]}\"; do\r\n    wget -qO \"${STORAGE_DIR}\/${mod}\" \"${MODS[$mod]}\"\r\n    unzip \"${STORAGE_DIR}\/${mod}\" -d \"${MODS_DIR}\"\r\ndone\r\n\r\n# Configure each mod\r\ndeclare -A MOD_CONFIGS=(\r\n    [\"Always On Server\/config.json\"]=\"${CONFIG_BASE_URL}\/alwayson.json\"\r\n    [\"UnlimitedPlayers\/config.json\"]=\"${CONFIG_BASE_URL}\/unlimitedplayers.json\"\r\n    [\"AutoLoadGame\/config.json\"]=\"${CONFIG_BASE_URL}\/autoloadgame.json\"\r\n)\r\nfor config in \"${!MOD_CONFIGS[@]}\"; do\r\n    wget -qO \"${MODS_DIR}\/${config}\" \"${MOD_CONFIGS[$config]}\"\r\ndone\r\n\r\n# Download and set up the Stardew Valley server script\r\nwget -qO \/mnt\/server\/stardew-valley-server.sh \"${CONFIG_BASE_URL}\/stardew-valley-server.sh\"\r\nchmod +x \/mnt\/server\/stardew-valley-server.sh\r\n\r\n# Cleanup\r\nrm \"${SMAPI_INSTALLER}\" \"${STORAGE_DIR}\/alwayson.zip\" \"${STORAGE_DIR}\/unlimitedplayers.zip\" \"${STORAGE_DIR}\/autoloadgame.zip\"\r\n\r\necho \"Stardew Valley Installation complete. Restart the server.\"",
+            "container": "ghcr.io\/parkervcp\/yolks:ubuntu",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Steam User",
+            "description": "This is a required setting and cannot be set to anonymous.",
+            "env_variable": "STEAM_USER",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Steam Password",
+            "description": "Steam User Password",
+            "env_variable": "STEAM_PASS",
+            "default_value": "",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "nullable|string",
+            "field_type": "text"
+        },
+        {
+            "name": "Game ID",
+            "description": "The ID corresponding to the game to download and run using SRCDS.",
+            "env_variable": "SRCDS_APPID",
+            "default_value": "413150",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": "string",
+            "field_type": "text"
+        },
+        {
+            "name": "Steam Auth",
+            "description": "Steam account auth code. Required if you have 2fa enabled.",
+            "env_variable": "STEAM_AUTH",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:5",
+            "field_type": "text"
+        },
+        {
+            "name": "Auto Update Server",
+            "description": "This is to auto-update the game server. Can be 0 for no and 1 for yes.",
+            "env_variable": "AUTO_UPDATE",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "Use Workshop content",
+            "description": "Set to true if you want to use your subscribed Workshop content",
+            "env_variable": "WORKSHOP",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        }
+    ]
+}
