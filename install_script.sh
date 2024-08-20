@@ -4,7 +4,7 @@
 # Server Files: /mnt/server
 # Image to install with is 'mono:latest'
 apt -y update
-apt -y --no-install-recommends install curl lib32gcc1 ca-certificates wget unzip
+apt -y --no-install-recommends install curl lib32gcc1 ca-certificates wget unzip x11vnc i3 xvfb
 
 ## just in case someone removed the defaults.
 if [ "${STEAM_USER}" == "" ]; then
