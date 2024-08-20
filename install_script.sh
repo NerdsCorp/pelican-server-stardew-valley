@@ -52,7 +52,7 @@ SMAPI_URL="https://github.com/Pathoschild/SMAPI/releases/download/4.0.8/SMAPI-4.
 SMAPI_INSTALLER="${STORAGE_DIR}/nexus.zip"
 wget -qO "${SMAPI_INSTALLER}" "${SMAPI_URL}"
 unzip "${SMAPI_INSTALLER}" -d /mnt/server/nexus
-echo -e "2\n/mnt/server\n1\n" | mono /mnt/server/nexus/SMAPI\ 4.0.8\ installer/internal/unix-install.exe
+echo -e "2\n/mnt/server\n1\n" | mono /mnt/server/nexus/SMAPI\ 4.0.8\ installer/internal/install on Linux.sh
 
 # Download and set up configuration files
 CONFIG_BASE_URL="https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main"
