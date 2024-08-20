@@ -48,11 +48,11 @@ LOGS_DIR="/mnt/server/logs"
 mkdir -p "${CONFIG_DIR}/i3" "${CONFIG_DIR}/StardewValley" "${STORAGE_DIR}" "${MODS_DIR}" "${LOGS_DIR}"
 
 # Download and install SMAPI
-SMAPI_URL="https://github.com/Pathoschild/SMAPI/releases/download/3.8/SMAPI-3.8.0-installer.zip"
+SMAPI_URL="https://github.com/Pathoschild/SMAPI/releases/download/4.0.8/SMAPI-4.0.8-installer.zip"
 SMAPI_INSTALLER="${STORAGE_DIR}/nexus.zip"
 wget -qO "${SMAPI_INSTALLER}" "${SMAPI_URL}"
 unzip "${SMAPI_INSTALLER}" -d /mnt/server/nexus
-echo -e "2\n/mnt/server\n1\n" | mono /mnt/server/nexus/SMAPI\ 3.8.0\ installer/internal/unix-install.exe
+echo -e "2\n/mnt/server\n1\n" | mono /mnt/server/nexus/SMAPI\ 4.0.8\ installer/internal/unix-install.exe
 
 # Download and set up configuration files
 CONFIG_BASE_URL="https://raw.githubusercontent.com/NerdsCorp/pelican-server-stardew-valley/main"
