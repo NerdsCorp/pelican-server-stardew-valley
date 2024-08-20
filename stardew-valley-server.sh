@@ -1,17 +1,39 @@
 #!/bin/bash
 
-if [ -f /tmp/.X10-lock ]; then rm /tmp/.X10-lock; fi
-Xvfb :10 -screen 0 884x515x24 -ac &
+# Set up environment variables
+export DISPLAY=:99.0
+export XAUTHORITY=~/.Xauthority
+export TERM=xterm
 
-while [ ! -z "`xdpyinfo -display :10 2>&1 | grep 'unable to open display'`" ]; do
-  echo Waiting for display;
-  sleep 5;
+# Remove any existing Xvfb lock file
+LOCK_FILE="/tmp/.X10-lock"
+if [ -f "$LOCK_FILE" ]; then
+  echo "Removing existing Xvfb lock file: $LOCK_FILE"
+  rm -f "$LOCK_FILE"
+fi
+
+# Start Xvfb on display :99
+echo "Starting Xvfb on display :99"
+/usr/bin/Xvfb :99 -screen 0 1024x768x24 -ac &
+
+# Wait for Xvfb to be ready
+echo "Waiting for Xvfb to initialize..."
+until xdpyinfo -display :99 &> /dev/null; do
+  echo "Waiting for display to be ready..."
+  sleep 1
 done
 
-export DISPLAY=:10.0
-x11vnc -display :10 -rfbport 5900 -rfbportv6 -1 -no6 -noipv6 -httpportv6 -1 -forever -ncache 10 -desktop StardewValley -cursor arrow -passwd $VNC_PASS -shared & 
+# Start x11vnc
+echo "Starting x11vnc on display :99"
+/usr/bin/x11vnc -display :99 -rfbport 5900 -forever -ncache 10 -desktop StardewValley -cursor arrow -passwd "$VNC_PASS" -shared &
+
+# Wait a moment for x11vnc to initialize
 sleep 5
-i3 &
-export XAUTHORITY=~/.Xauthority
-TERM=xterm
-./StardewValley
+
+# Start i3 window manager
+echo "Starting i3 window manager"
+/usr/bin/i3 &
+
+# Start the Stardew Valley application
+echo "Starting Stardew Valley"
+exec ./StardewValley
